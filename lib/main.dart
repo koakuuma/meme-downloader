@@ -89,22 +89,11 @@ class _MyHomePageState extends State<MyHomePage> {
           if (_isSelectionMode)
             IconButton(
               icon: const Icon(Icons.download),
-              onPressed: () async {
+              onPressed: () {
                 for (String memeName in _selectedMemes) {
                   final meme = _memes.firstWhere((m) => m.name == memeName);
                   _downloadService.startTask(meme.name, meme.urls.length);
-                  final urls = meme.urls;
-                  for (int i = 0; i < urls.length; i++) {
-                    final url = urls[i];
-                    final fileName =
-                        '${meme.name}_${url.split('/').last.split('?').first}';
-                    await _memeService.downloadMeme(
-                      url,
-                      fileName,
-                      _downloadService,
-                      meme.name,
-                    );
-                  }
+                  _memeService.downloadMemes(meme, _downloadService);
                 }
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -176,14 +165,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       _toggleMemeSelection(meme.name);
                     }
                   },
-                  onDoubleTap: () {
-                    if (!_isSelectionMode) {
-                      setState(() {
-                        meme.cover =
-                            meme.urls[Random().nextInt(meme.urls.length)];
-                      });
-                    }
-                  },
                   child: GridTile(
                     footer: GridTileBar(
                       backgroundColor: Colors.black45,
@@ -250,9 +231,17 @@ class _MemePreviewDialogState extends State<MemePreviewDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      content: Container(
-        height: 300, // Fixed height for the image container
-        child: Image.network(_currentCover, fit: BoxFit.contain),
+      content: GestureDetector(
+        onDoubleTap: () {
+          setState(() {
+            _currentCover =
+                widget.meme.urls[Random().nextInt(widget.meme.urls.length)];
+          });
+        },
+        child: Container(
+          height: 300, // Fixed height for the image container
+          child: Image.network(_currentCover, fit: BoxFit.contain),
+        ),
       ),
       actions: [
         Row(
@@ -269,20 +258,10 @@ class _MemePreviewDialogState extends State<MemePreviewDialog> {
               child: const Text('换一张'),
             ),
             TextButton(
-              onPressed: () async {
+              onPressed: () {
                 final meme = widget.meme;
                 widget.downloadService.startTask(meme.name, meme.urls.length);
-                for (final url in meme.urls) {
-                  final fileName =
-                      '${meme.name}_${url.split('/').last.split('?').first}';
-                  // Note: We are not awaiting here to allow parallel downloads.
-                  widget.memeService.downloadMeme(
-                    url,
-                    fileName,
-                    widget.downloadService,
-                    meme.name,
-                  );
-                }
+                widget.memeService.downloadMemes(meme, widget.downloadService);
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
