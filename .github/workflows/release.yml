@@ -39,30 +39,6 @@ jobs:
           name: android-apks
           path: build/app/outputs/flutter-apk/*.apk
 
-  build_macos:
-    name: Build macOS
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: "stable"
-      - name: Get dependencies
-        run: flutter pub get
-      - name: Build macOS
-        run: flutter build macos --release
-      - name: Package Release
-        run: |
-          cd build/macos/Build/Products/Release
-          zip -r ../../../../meme-downloader-macos.zip *.app
-      - name: List files for upload
-        run: ls -l
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-release
-          path: meme-downloader-macos.zip
-
   build_windows:
     name: Build Windows
     runs-on: windows-latest
@@ -91,7 +67,7 @@ jobs:
 
   create_release:
     name: Create Release
-    needs: [build_android, build_macos, build_windows]
+    needs: [build_android, build_windows]
     runs-on: ubuntu-latest
     steps:
       - name: Create Release Tag
@@ -140,15 +116,6 @@ jobs:
           asset_path: artifacts/android-apks/app-x86_64-release.apk
           asset_name: meme-downloader-android-x86_64.apk
           asset_content_type: application/vnd.android.package-archive
-      - name: Upload Release Assets
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/macos-release/meme-downloader-macos.zip
-          asset_name: meme-downloader-macos.zip
-          asset_content_type: application/zip
       - name: Upload Release Assets
         uses: actions/upload-release-asset@v1
         env:
