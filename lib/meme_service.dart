@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:io';
 import 'dart:math';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
@@ -49,11 +50,13 @@ class MemeService {
           .get(Uri.parse(url))
           .timeout(const Duration(seconds: 15));
       if (response.statusCode == 200) {
-        await ImageGallerySaver.saveImage(
-          response.bodyBytes,
-          name: fileName,
-          isReturnImagePathOfIOS: true,
-        );
+        if (Platform.isAndroid || Platform.isIOS) {
+          await ImageGallerySaver.saveImage(
+            response.bodyBytes,
+            name: fileName,
+            isReturnImagePathOfIOS: true,
+          );
+        }
         downloadService.incrementTaskProgress(taskName);
       }
       // Add a small delay to avoid rate-limiting
