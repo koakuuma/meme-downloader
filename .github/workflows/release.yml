@@ -20,7 +20,7 @@ jobs:
         run: flutter pub get
       - name: Add namespace to image_gallery_saver
         run: |
-          sed -i "s/android {/android {\n    namespace \"com.example.imagegallerysaver\"/" $(flutter pub cache path)/hosted/pub.dev/image_gallery_saver-*/android/build.gradle
+          find /home/runner/.pub-cache/hosted/pub.dev/image_gallery_saver-*/android -type f -name "build.gradle" -exec sed -i "s/android {/android {\n    namespace \"com.example.imagegallerysaver\"/" {} +
       - name: Build APKs
         run: flutter build apk --release --split-per-abi
       - name: Upload Artifact
