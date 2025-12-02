@@ -39,34 +39,6 @@ jobs:
           name: android-apks
           path: build/app/outputs/flutter-apk/*.apk
 
-  build_linux:
-    name: Build Linux
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: "stable"
-      - name: Get dependencies
-        run: flutter pub get
-      - name: Build Linux
-        run: flutter build linux --release
-      - name: Package Release
-        run: |
-          cd build/linux/x64/release/bundle
-          tar -czvf ../../../../meme-downloader-linux-x64.tar.gz .
-      - name: List files for upload
-        run: ls -l
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-release
-          path: meme-downloader-linux-x64.tar.gz
-
   build_macos:
     name: Build macOS
     runs-on: macos-latest
@@ -119,7 +91,7 @@ jobs:
 
   create_release:
     name: Create Release
-    needs: [build_android, build_linux, build_macos, build_windows]
+    needs: [build_android, build_macos, build_windows]
     runs-on: ubuntu-latest
     steps:
       - name: Create Release Tag
@@ -168,15 +140,6 @@ jobs:
           asset_path: artifacts/android-apks/app-x86_64-release.apk
           asset_name: meme-downloader-android-x86_64.apk
           asset_content_type: application/vnd.android.package-archive
-      - name: Upload Release Assets
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/linux-release/meme-downloader-linux-x64.tar.gz
-          asset_name: meme-downloader-linux-x64.tar.gz
-          asset_content_type: application/gzip
       - name: Upload Release Assets
         uses: actions/upload-release-asset@v1
         env:
