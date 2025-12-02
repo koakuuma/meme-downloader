@@ -21,7 +21,7 @@ jobs:
       - name: Build APKs
         run: flutter build apk --release --split-per-abi
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: android-apks
           path: build/app/outputs/apk/release/*.apk
@@ -47,7 +47,7 @@ jobs:
           cd build/linux/x64/release/bundle
           tar -czvf ../../../../meme-downloader-linux-x64.tar.gz .
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: linux-release
           path: meme-downloader-linux-x64.tar.gz
@@ -69,7 +69,7 @@ jobs:
           cd build/macos/Build/Products/Release
           zip -r ../../../../meme-downloader-macos.zip *.app
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: macos-release
           path: meme-downloader-macos.zip
@@ -91,7 +91,7 @@ jobs:
           cd build/windows/runner/Release
           7z a ../../../../meme-downloader-windows-x64.zip .
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: windows-release
           path: meme-downloader-windows-x64.zip
@@ -105,7 +105,7 @@ jobs:
         id: create_tag
         run: echo "TAG_NAME=release-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: artifacts
       - name: Create Release
