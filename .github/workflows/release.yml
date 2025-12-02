@@ -12,7 +12,7 @@ jobs:
       - uses: actions/setup-java@v3
         with:
           distribution: "zulu"
-          java-version: "11"
+          java-version: "17"
       - uses: subosito/flutter-action@v2
         with:
           channel: "stable"
@@ -86,6 +86,8 @@ jobs:
         run: flutter pub get
       - name: Build Windows
         run: flutter build windows --release
+      - name: List build directory
+        run: ls -R build/windows
       - name: Package Release
         run: |
           cd build/windows/runner/Release
