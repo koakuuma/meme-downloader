@@ -60,7 +60,7 @@ jobs:
           cd build/linux/x64/release/bundle
           tar -czvf ../../../../meme-downloader-linux-x64.tar.gz .
       - name: List files for upload
-        run: ls -R ../../../../
+        run: ls -R
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -84,7 +84,7 @@ jobs:
           cd build/macos/Build/Products/Release
           zip -r ../../../../meme-downloader-macos.zip *.app
       - name: List files for upload
-        run: ls -R ../../../../
+        run: ls -R
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -110,7 +110,7 @@ jobs:
           cd build/windows/x64/runner/Release
           7z a ../../../../meme-downloader-windows-x64.zip .
       - name: List files for upload
-        run: ls -R ../../../../
+        run: ls -R
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
