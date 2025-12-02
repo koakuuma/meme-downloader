@@ -1,5 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:meme_downloader/download_page.dart';
+import 'package:meme_downloader/download_service.dart';
 import 'package:meme_downloader/meme_service.dart';
 import 'package:meme_downloader/models/meme.dart';
 
@@ -29,6 +31,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final MemeService _memeService = MemeService();
+  final DownloadService _downloadService = DownloadService();
   late Future<List<Meme>> _memesFuture;
   bool _isSelectionMode = false;
   Set<String> _selectedMemes = {};
@@ -89,16 +92,25 @@ class _MyHomePageState extends State<MyHomePage> {
               onPressed: () async {
                 for (String memeName in _selectedMemes) {
                   final meme = _memes.firstWhere((m) => m.name == memeName);
+                  _downloadService.startTask(meme.name, meme.urls.length);
+                  int completed = 0;
                   for (String url in meme.urls) {
                     final fileName =
                         '${meme.name}_${url.split('/').last.split('?').first}';
-                    await _memeService.downloadMeme(url, fileName);
+                    await _memeService.downloadMeme(
+                      url,
+                      fileName,
+                      _downloadService,
+                      meme.name,
+                      completed,
+                    );
+                    completed++;
                   }
                 }
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      'Downloading ${_selectedMemes.length} memes...',
+                      'Started downloading ${_selectedMemes.length} memes...',
                     ),
                   ),
                 );
@@ -108,6 +120,18 @@ class _MyHomePageState extends State<MyHomePage> {
           IconButton(
             icon: Icon(_isSelectionMode ? Icons.close : Icons.select_all),
             onPressed: _toggleSelectionMode,
+          ),
+          IconButton(
+            icon: const Icon(Icons.history),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      DownloadPage(downloadService: _downloadService),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -142,6 +166,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         builder: (context) => MemePreviewDialog(
                           meme: meme,
                           memeService: _memeService,
+                          downloadService: _downloadService,
                         ),
                       );
                     }
@@ -201,11 +226,13 @@ class _MyHomePageState extends State<MyHomePage> {
 class MemePreviewDialog extends StatefulWidget {
   final Meme meme;
   final MemeService memeService;
+  final DownloadService downloadService;
 
   const MemePreviewDialog({
     super.key,
     required this.meme,
     required this.memeService,
+    required this.downloadService,
   });
 
   @override
@@ -246,7 +273,14 @@ class _MemePreviewDialogState extends State<MemePreviewDialog> {
               onPressed: () async {
                 final fileName =
                     '${widget.meme.name}_${_currentCover.split('/').last.split('?').first}';
-                await widget.memeService.downloadMeme(_currentCover, fileName);
+                widget.downloadService.startTask(widget.meme.name, 1);
+                await widget.memeService.downloadMeme(
+                  _currentCover,
+                  fileName,
+                  widget.downloadService,
+                  widget.meme.name,
+                  0,
+                );
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Downloading ${widget.meme.name}...')),
                 );

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:meme_downloader/models/meme.dart';
+import 'package:meme_downloader/download_service.dart';
 
 class MemeService {
   Future<List<Meme>> loadMemes() async {
@@ -37,7 +38,13 @@ class MemeService {
     return memes;
   }
 
-  Future<void> downloadMeme(String url, String fileName) async {
+  Future<void> downloadMeme(
+    String url,
+    String fileName,
+    DownloadService downloadService,
+    String taskName,
+    int completed,
+  ) async {
     final response = await http.get(Uri.parse(url));
     if (response.statusCode == 200) {
       final directory = await getDownloadsDirectory();
@@ -45,6 +52,7 @@ class MemeService {
         final filePath = '${directory.path}/$fileName';
         final file = File(filePath);
         await file.writeAsBytes(response.bodyBytes);
+        downloadService.updateTask(taskName, completed + 1);
       }
     }
   }
