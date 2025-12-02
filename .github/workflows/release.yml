@@ -18,6 +18,9 @@ jobs:
           channel: "stable"
       - name: Get dependencies
         run: flutter pub get
+      - name: Add namespace to image_gallery_saver
+        run: |
+          sed -i "s/android {/android {\n    namespace \"com.example.imagegallerysaver\"/" $(flutter pub cache path)/hosted/pub.dev/image_gallery_saver-*/android/build.gradle
       - name: Build APKs
         run: flutter build apk --release --split-per-abi
       - name: Upload Artifact
@@ -90,7 +93,7 @@ jobs:
         run: ls -R build/windows
       - name: Package Release
         run: |
-          cd build/windows/runner/Release
+          cd build/windows/x64/runner/Release
           7z a ../../../../meme-downloader-windows-x64.zip .
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
