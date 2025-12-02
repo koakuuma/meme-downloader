@@ -1,0 +1,10 @@
+* text=auto
+
+*.png -text
+*.jpg -text
+*.ico -text
+*.gif -text
+*.webp -text
+
+* linguist-vendored
+lib/** -linguist-vendored
