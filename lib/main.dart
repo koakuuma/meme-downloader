@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:meme_downloader/meme_service.dart';
+import 'package:meme_downloader/models/meme.dart';
 
 void main() {
   runApp(const MyApp());
@@ -29,20 +29,90 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final MemeService _memeService = MemeService();
-  late Future<List<String>> _memeTxtsFuture;
+  late Future<List<Meme>> _memesFuture;
+  bool _isSelectionMode = false;
+  Set<String> _selectedMemes = {};
+  List<Meme> _memes = [];
 
   @override
   void initState() {
     super.initState();
-    _memeTxtsFuture = _memeService.loadMemeTxts();
+    _memesFuture = _memeService.loadMemes();
+    _memesFuture.then((value) => setState(() => _memes = value));
+  }
+
+  void _toggleSelectionMode() {
+    setState(() {
+      _isSelectionMode = !_isSelectionMode;
+      if (!_isSelectionMode) {
+        _selectedMemes.clear();
+      }
+    });
+  }
+
+  void _toggleMemeSelection(String memeName) {
+    setState(() {
+      if (_selectedMemes.contains(memeName)) {
+        _selectedMemes.remove(memeName);
+      } else {
+        _selectedMemes.add(memeName);
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Meme Downloader')),
-      body: FutureBuilder<List<String>>(
-        future: _memeTxtsFuture,
+      appBar: AppBar(
+        title: Text(
+          _isSelectionMode
+              ? '${_selectedMemes.length} selected'
+              : 'Meme Downloader',
+        ),
+        actions: [
+          if (_isSelectionMode)
+            IconButton(
+              icon: const Icon(Icons.select_all),
+              onPressed: () {
+                setState(() {
+                  if (_selectedMemes.length == _memes.length) {
+                    _selectedMemes.clear();
+                  } else {
+                    _selectedMemes = _memes.map((m) => m.name).toSet();
+                  }
+                });
+              },
+            ),
+          if (_isSelectionMode)
+            IconButton(
+              icon: const Icon(Icons.download),
+              onPressed: () async {
+                for (String memeName in _selectedMemes) {
+                  final meme = _memes.firstWhere((m) => m.name == memeName);
+                  for (String url in meme.urls) {
+                    final fileName =
+                        '${meme.name}_${url.split('/').last.split('?').first}';
+                    await _memeService.downloadMeme(url, fileName);
+                  }
+                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Downloading ${_selectedMemes.length} memes...',
+                    ),
+                  ),
+                );
+                _toggleSelectionMode();
+              },
+            ),
+          IconButton(
+            icon: Icon(_isSelectionMode ? Icons.close : Icons.select_all),
+            onPressed: _toggleSelectionMode,
+          ),
+        ],
+      ),
+      body: FutureBuilder<List<Meme>>(
+        future: _memesFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -51,40 +121,145 @@ class _MyHomePageState extends State<MyHomePage> {
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(child: Text('No memes found.'));
           } else {
-            final memeTxts = snapshot.data!;
-            return ListView.builder(
-              itemCount: memeTxts.length,
+            return GridView.builder(
+              padding: const EdgeInsets.all(8.0),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 8.0,
+                mainAxisSpacing: 8.0,
+              ),
+              itemCount: _memes.length,
               itemBuilder: (context, index) {
-                final memeTxt = memeTxts[index];
-                final memeName = memeTxt.split('/').last.replaceAll('.txt', '');
-                return ListTile(
-                  title: Text(memeName),
-                  onTap: () async {
-                    final txtContent = await rootBundle.loadString(memeTxt);
-                    final urls = txtContent
-                        .split('\n')
-                        .map((line) => line.trim())
-                        .where((line) => line.isNotEmpty)
-                        .toList();
-                    if (urls.isNotEmpty) {
-                      final rawUrl = urls[Random().nextInt(urls.length)];
-                      final randomUrl = rawUrl.startsWith('http')
-                          ? rawUrl
-                          : 'https://i0.hdslb.com/bfs/' + rawUrl;
-                      final fileName =
-                          '${memeName}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-                      await _memeService.downloadMeme(randomUrl, fileName);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Downloading $memeName...')),
+                final meme = _memes[index];
+                final isSelected = _selectedMemes.contains(meme.name);
+                return GestureDetector(
+                  onTap: () {
+                    if (_isSelectionMode) {
+                      _toggleMemeSelection(meme.name);
+                    } else {
+                      showDialog(
+                        context: context,
+                        builder: (context) => MemePreviewDialog(
+                          meme: meme,
+                          memeService: _memeService,
+                        ),
                       );
                     }
                   },
+                  onLongPress: () {
+                    if (!_isSelectionMode) {
+                      _toggleSelectionMode();
+                      _toggleMemeSelection(meme.name);
+                    }
+                  },
+                  onDoubleTap: () {
+                    if (!_isSelectionMode) {
+                      setState(() {
+                        meme.cover =
+                            meme.urls[Random().nextInt(meme.urls.length)];
+                      });
+                    }
+                  },
+                  child: GridTile(
+                    footer: GridTileBar(
+                      backgroundColor: Colors.black45,
+                      title: Text(meme.name, textAlign: TextAlign.center),
+                    ),
+                    child: Stack(
+                      children: [
+                        Image.network(
+                          meme.cover,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(Icons.error);
+                          },
+                        ),
+                        if (_isSelectionMode)
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: Icon(
+                              isSelected
+                                  ? Icons.check_circle
+                                  : Icons.radio_button_unchecked,
+                              color: Colors.white,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 );
               },
             );
           }
         },
       ),
+    );
+  }
+}
+
+class MemePreviewDialog extends StatefulWidget {
+  final Meme meme;
+  final MemeService memeService;
+
+  const MemePreviewDialog({
+    super.key,
+    required this.meme,
+    required this.memeService,
+  });
+
+  @override
+  State<MemePreviewDialog> createState() => _MemePreviewDialogState();
+}
+
+class _MemePreviewDialogState extends State<MemePreviewDialog> {
+  late String _currentCover;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentCover = widget.meme.cover;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      content: Container(
+        height: 300, // Fixed height for the image container
+        child: Image.network(_currentCover, fit: BoxFit.contain),
+      ),
+      actions: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _currentCover = widget
+                      .meme
+                      .urls[Random().nextInt(widget.meme.urls.length)];
+                });
+              },
+              child: const Text('换一张'),
+            ),
+            TextButton(
+              onPressed: () async {
+                final fileName =
+                    '${widget.meme.name}_${_currentCover.split('/').last.split('?').first}';
+                await widget.memeService.downloadMeme(_currentCover, fileName);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Downloading ${widget.meme.name}...')),
+                );
+              },
+              child: const Text('下载此表情包'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('关闭'),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
