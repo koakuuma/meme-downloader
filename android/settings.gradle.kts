@@ -23,17 +23,3 @@ plugins {
 }
 
 include(":app")
-
-dependencyResolutionManagement {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    versionCatalogs {
-        create("libs") {
-            from(files("../libs.versions.toml"))
-        }
-    }
-}
-
-apply(from = File(settings.rootDir, "flutter_plugins.gradle"))

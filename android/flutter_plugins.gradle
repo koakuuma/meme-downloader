@@ -1,5 +1,0 @@
-include ':image_gallery_saver'
-project(':image_gallery_saver').projectDir = new File(settings.rootDir, '.pub-cache/hosted/pub.dartlang.org/image_gallery_saver-2.0.3/android')
-android {
-    namespace 'com.example.imagegallerysaver'
-}

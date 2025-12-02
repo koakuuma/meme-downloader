@@ -18,6 +18,9 @@ jobs:
           channel: "stable"
       - name: Get dependencies
         run: flutter pub get
+      - name: Add namespace to image_gallery_saver
+        run: |
+          sed -i "s/android {/android {\n    namespace \"com.example.imagegallerysaver\"/" $(flutter pub cache path)/hosted/pub.dev/image_gallery_saver-*/android/build.gradle
       - name: Build APKs
         run: flutter build apk --release --split-per-abi
       - name: Upload Artifact
