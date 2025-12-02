@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:io';
 import 'dart:math';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:meme_downloader/models/meme.dart';
 import 'package:meme_downloader/download_service.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
 
 class MemeService {
   Future<List<Meme>> loadMemes() async {
@@ -48,7 +49,7 @@ class MemeService {
     try {
       final response = await http
           .get(Uri.parse(url))
-          .timeout(const Duration(seconds: 15));
+          .timeout(const Duration(seconds: 30));
       if (response.statusCode == 200) {
         if (Platform.isAndroid || Platform.isIOS) {
           await ImageGallerySaver.saveImage(
@@ -56,6 +57,22 @@ class MemeService {
             name: fileName,
             isReturnImagePathOfIOS: true,
           );
+        } else {
+          Directory? downloadsDir;
+          if (Platform.isWindows || Platform.isMacOS) {
+            downloadsDir = await getDownloadsDirectory();
+          } else if (Platform.isLinux) {
+            downloadsDir = Directory.current;
+          }
+
+          if (downloadsDir != null) {
+            final memesDir = Directory(path.join(downloadsDir.path, 'memes'));
+            if (!await memesDir.exists()) {
+              await memesDir.create(recursive: true);
+            }
+            final file = File(path.join(memesDir.path, fileName));
+            await file.writeAsBytes(response.bodyBytes);
+          }
         }
         downloadService.incrementTaskProgress(taskName);
       }
