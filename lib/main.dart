@@ -93,8 +93,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 for (String memeName in _selectedMemes) {
                   final meme = _memes.firstWhere((m) => m.name == memeName);
                   _downloadService.startTask(meme.name, meme.urls.length);
-                  int completed = 0;
-                  for (String url in meme.urls) {
+                  final urls = meme.urls;
+                  for (int i = 0; i < urls.length; i++) {
+                    final url = urls[i];
                     final fileName =
                         '${meme.name}_${url.split('/').last.split('?').first}';
                     await _memeService.downloadMeme(
@@ -102,9 +103,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       fileName,
                       _downloadService,
                       meme.name,
-                      completed,
                     );
-                    completed++;
                   }
                 }
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -271,18 +270,24 @@ class _MemePreviewDialogState extends State<MemePreviewDialog> {
             ),
             TextButton(
               onPressed: () async {
-                final fileName =
-                    '${widget.meme.name}_${_currentCover.split('/').last.split('?').first}';
-                widget.downloadService.startTask(widget.meme.name, 1);
-                await widget.memeService.downloadMeme(
-                  _currentCover,
-                  fileName,
-                  widget.downloadService,
-                  widget.meme.name,
-                  0,
-                );
+                final meme = widget.meme;
+                widget.downloadService.startTask(meme.name, meme.urls.length);
+                for (final url in meme.urls) {
+                  final fileName =
+                      '${meme.name}_${url.split('/').last.split('?').first}';
+                  // Note: We are not awaiting here to allow parallel downloads.
+                  widget.memeService.downloadMeme(
+                    url,
+                    fileName,
+                    widget.downloadService,
+                    meme.name,
+                  );
+                }
+                Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Downloading ${widget.meme.name}...')),
+                  SnackBar(
+                    content: Text('Started downloading ${meme.name}...'),
+                  ),
                 );
               },
               child: const Text('下载此表情包'),

@@ -13,7 +13,7 @@ class DownloadPage extends StatelessWidget {
       appBar: AppBar(title: const Text('Download Progress')),
       body: StreamBuilder<List<DownloadTask>>(
         stream: downloadService.tasks,
-        initialData: [],
+        initialData: downloadService.lastTasks,
         builder: (context, snapshot) {
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(child: Text('No download tasks.'));

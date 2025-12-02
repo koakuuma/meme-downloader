@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
-import 'package:path_provider/path_provider.dart';
+import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:meme_downloader/models/meme.dart';
 import 'package:meme_downloader/download_service.dart';
 
@@ -43,17 +43,24 @@ class MemeService {
     String fileName,
     DownloadService downloadService,
     String taskName,
-    int completed,
   ) async {
-    final response = await http.get(Uri.parse(url));
-    if (response.statusCode == 200) {
-      final directory = await getDownloadsDirectory();
-      if (directory != null) {
-        final filePath = '${directory.path}/$fileName';
-        final file = File(filePath);
-        await file.writeAsBytes(response.bodyBytes);
-        downloadService.updateTask(taskName, completed + 1);
+    try {
+      final response = await http
+          .get(Uri.parse(url))
+          .timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) {
+        await ImageGallerySaver.saveImage(
+          response.bodyBytes,
+          name: fileName,
+          isReturnImagePathOfIOS: true,
+        );
+        downloadService.incrementTaskProgress(taskName);
       }
+      // Add a small delay to avoid rate-limiting
+      await Future.delayed(const Duration(milliseconds: 200));
+    } catch (e) {
+      // Handle or log the error
+      print('Error downloading $url: $e');
     }
   }
 }
