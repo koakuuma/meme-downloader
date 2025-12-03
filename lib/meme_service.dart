@@ -24,6 +24,7 @@ class MemeService {
         fileName,
         downloadService,
         meme.name,
+        meme.name,
       ).whenComplete(() => _activeDownloads--);
     }
   }
@@ -63,6 +64,7 @@ class MemeService {
     String fileName,
     DownloadService downloadService,
     String taskName,
+    String directoryName,
   ) async {
     int retries = 3;
     for (int i = 0; i < retries; i++) {
@@ -87,7 +89,7 @@ class MemeService {
 
             if (downloadsDir != null) {
               final memesDir = Directory(
-                path.join(downloadsDir.path, 'memes', taskName),
+                path.join(downloadsDir.path, 'memes', directoryName),
               );
               if (!await memesDir.exists()) {
                 await memesDir.create(recursive: true);

@@ -259,6 +259,27 @@ class _MemePreviewDialogState extends State<MemePreviewDialog> {
             ),
             TextButton(
               onPressed: () {
+                final url = _currentCover;
+                final fileName = url.split('/').last.split('?').first;
+                final taskName = '${widget.meme.name}-$fileName';
+
+                widget.downloadService.startTask(taskName, 1);
+                widget.memeService.downloadMeme(
+                  url,
+                  fileName,
+                  widget.downloadService,
+                  taskName,
+                  widget.meme.name,
+                );
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Started downloading $fileName...')),
+                );
+              },
+              child: const Text('下载这张'),
+            ),
+            TextButton(
+              onPressed: () {
                 final meme = widget.meme;
                 widget.downloadService.startTask(meme.name, meme.urls.length);
                 widget.memeService.downloadMemes(meme, widget.downloadService);
